@@ -187,6 +187,7 @@ def cosine_loss(a, v, y):
 
 device = torch.device("cuda" if use_cuda else "cpu")
 syncnet = SyncNet().to(device)
+syncnet.eval()
 for p in syncnet.parameters():
     p.requires_grad = False
 
