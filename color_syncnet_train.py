@@ -155,10 +155,11 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             x = x.to(device)
 
             mel = mel.to(device)
-
+            # print(f"x.shape={x.shape}, mel.shape={mel.shape}")# x.shape=torch.Size([64, 15, 48, 96]), mel.shape=torch.Size([64, 1, 80, 16])
+            # img_size = 256-> x.shape=torch.Size([64, 15, 128, 256]), mel.shape=torch.Size([64, 1, 80, 16])
             a, v = model(mel, x)
             y = y.to(device)
-
+            # print(f"a.shape={a.shape}, v.shape={v.shape}")# a.shape=torch.Size([64, 512]), v.shape=torch.Size([64, 512])
             loss = cosine_loss(a, v, y)
             loss.backward()
             optimizer.step()
