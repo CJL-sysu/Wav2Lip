@@ -10,7 +10,7 @@ from torch import optim
 import torch.backends.cudnn as cudnn
 from torch.utils import data as data_utils
 import numpy as np
-
+from torch.utils.tensorboard import SummaryWriter
 from glob import glob
 
 import os, random, cv2, argparse
@@ -22,9 +22,11 @@ parser.add_argument("--data_root", help="Root folder of the preprocessed LRS2 da
 
 parser.add_argument('--checkpoint_dir', help='Save checkpoints to this directory', required=True, type=str)
 parser.add_argument('--checkpoint_path', help='Resumed from this checkpoint', default=None, type=str)
+parser.add_argument('--tensorboard_dir', help='Save tensorboard logs to this directory', default='tensorboard', type=str)
 
 args = parser.parse_args()
 
+writer = SummaryWriter(args.tensorboard_dir)
 
 global_step = 0
 global_epoch = 0
@@ -175,7 +177,7 @@ def train(device, model, train_data_loader, test_data_loader, optimizer,
             if global_step % hparams.syncnet_eval_interval == 0:
                 with torch.no_grad():
                     eval_model(test_data_loader, global_step, device, model, checkpoint_dir)
-
+            writer.add_scalar('loss', loss, global_step)
             prog_bar.set_description('Loss: {}'.format(running_loss / (step + 1)))
 
         global_epoch += 1
