@@ -206,6 +206,7 @@ def eval_model(test_data_loader, global_step, device, model, checkpoint_dir):
 
         averaged_loss = sum(losses) / len(losses)
         print(averaged_loss)
+        writer.add_scalar('eval_loss', averaged_loss, global_step)
 
         return
 
