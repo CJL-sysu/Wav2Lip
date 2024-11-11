@@ -12,6 +12,7 @@ from torch import optim
 import torch.backends.cudnn as cudnn
 from torch.utils import data as data_utils
 import numpy as np
+from torch.utils.tensorboard import SummaryWriter
 
 from glob import glob
 
@@ -24,11 +25,13 @@ parser.add_argument("--data_root", help="Root folder of the preprocessed LRS2 da
 
 parser.add_argument('--checkpoint_dir', help='Save checkpoints to this directory', required=True, type=str)
 parser.add_argument('--syncnet_checkpoint_path', help='Load the pre-trained Expert discriminator', required=True, type=str)
+parser.add_argument('--tensorboard_dir', help='Save tensorboard logs to this directory', default='tensorboard', type=str)
 
 parser.add_argument('--checkpoint_path', help='Resume generator from this checkpoint', default=None, type=str)
 parser.add_argument('--disc_checkpoint_path', help='Resume quality disc from this checkpoint', default=None, type=str)
 
 args = parser.parse_args()
+writer = SummaryWriter(args.tensorboard_dir)
 
 
 global_step = 0
@@ -295,6 +298,11 @@ def train(device, model, disc, train_data_loader, test_data_loader, optimizer, d
                                                                                         running_perceptual_loss / (step + 1),
                                                                                         running_disc_fake_loss / (step + 1),
                                                                                         running_disc_real_loss / (step + 1)))
+            writer.add_scalar('train_l1_loss', running_l1_loss / (step + 1), global_step)
+            writer.add_scalar('train_sync_loss', running_sync_loss / (step + 1), global_step)
+            writer.add_scalar('train_perceptual_loss', running_perceptual_loss / (step + 1), global_step)
+            writer.add_scalar('train_disc_real_loss', running_disc_real_loss / (step + 1), global_step)
+            writer.add_scalar('train_disc_fake_loss', running_disc_fake_loss / (step + 1), global_step)
 
         global_epoch += 1
 
@@ -349,6 +357,11 @@ def eval_model(test_data_loader, global_step, device, model, disc):
                                                             sum(running_perceptual_loss) / len(running_perceptual_loss),
                                                             sum(running_disc_fake_loss) / len(running_disc_fake_loss),
                                                              sum(running_disc_real_loss) / len(running_disc_real_loss)))
+        writer.add_scalar('eval_l1_loss', sum(running_l1_loss) / len(running_l1_loss), global_step)
+        writer.add_scalar('eval_sync_loss', sum(running_sync_loss) / len(running_sync_loss), global_step)
+        writer.add_scalar('eval_perceptual_loss', sum(running_perceptual_loss) / len(running_perceptual_loss), global_step)
+        writer.add_scalar('eval_disc_real_loss', sum(running_disc_real_loss) / len(running_disc_real_loss), global_step)
+        writer.add_scalar('eval_disc_fake_loss', sum(running_disc_fake_loss) / len(running_disc_fake_loss), global_step)
         return sum(running_sync_loss) / len(running_sync_loss)
 
 

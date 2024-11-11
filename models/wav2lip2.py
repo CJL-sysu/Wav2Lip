@@ -145,24 +145,30 @@ class Wav2Lip_disc_qual(nn.Module):
         super(Wav2Lip_disc_qual, self).__init__()
 
         self.face_encoder_blocks = nn.ModuleList([
-            nn.Sequential(nonorm_Conv2d(3, 32, kernel_size=7, stride=1, padding=3)), # 48,96
+            nn.Sequential(nonorm_Conv2d(3, 16, kernel_size=7, stride=1, padding=3)), # 128,256
 
-            nn.Sequential(nonorm_Conv2d(32, 64, kernel_size=5, stride=(1, 2), padding=2), # 48,48
+            nn.Sequential(nonorm_Conv2d(16, 32, kernel_size=5, stride=(1, 2), padding=2), # 128,128
+            nonorm_Conv2d(32, 32, kernel_size=5, stride=1, padding=2)),
+
+            nn.Sequential(nonorm_Conv2d(32, 64, kernel_size=5, stride=2, padding=2),    # 64,64
             nonorm_Conv2d(64, 64, kernel_size=5, stride=1, padding=2)),
 
-            nn.Sequential(nonorm_Conv2d(64, 128, kernel_size=5, stride=2, padding=2),    # 24,24
+            nn.Sequential(nonorm_Conv2d(64, 128, kernel_size=5, stride=2, padding=2),   # 32,32
             nonorm_Conv2d(128, 128, kernel_size=5, stride=1, padding=2)),
 
-            nn.Sequential(nonorm_Conv2d(128, 256, kernel_size=5, stride=2, padding=2),   # 12,12
-            nonorm_Conv2d(256, 256, kernel_size=5, stride=1, padding=2)),
+            nn.Sequential(nonorm_Conv2d(128, 128, kernel_size=3, stride=2, padding=1),       # 16,16
+            nonorm_Conv2d(128, 128, kernel_size=3, stride=1, padding=1)),
 
-            nn.Sequential(nonorm_Conv2d(256, 512, kernel_size=3, stride=2, padding=1),       # 6,6
-            nonorm_Conv2d(512, 512, kernel_size=3, stride=1, padding=1)),
-
-            nn.Sequential(nonorm_Conv2d(512, 512, kernel_size=3, stride=2, padding=1),     # 3,3
+            nn.Sequential(nonorm_Conv2d(128, 256, kernel_size=3, stride=2, padding=1),     # 8,8
+            nonorm_Conv2d(256, 256, kernel_size=3, stride=1, padding=1),),
+            
+            nn.Sequential(nonorm_Conv2d(256, 256, kernel_size=3, stride=2, padding=1),     # 4,4
+            nonorm_Conv2d(256, 256, kernel_size=3, stride=1, padding=1),),
+            
+            nn.Sequential(nonorm_Conv2d(256, 512, kernel_size=3, stride=2, padding=1),     # 2,2
             nonorm_Conv2d(512, 512, kernel_size=3, stride=1, padding=1),),
             
-            nn.Sequential(nonorm_Conv2d(512, 512, kernel_size=3, stride=1, padding=0),     # 1, 1
+            nn.Sequential(nonorm_Conv2d(512, 512, kernel_size=2, stride=1, padding=0),     # 1,1
             nonorm_Conv2d(512, 512, kernel_size=1, stride=1, padding=0)),])
 
         self.binary_pred = nn.Sequential(nn.Conv2d(512, 1, kernel_size=1, stride=1, padding=0), nn.Sigmoid())
@@ -177,13 +183,16 @@ class Wav2Lip_disc_qual(nn.Module):
         return face_sequences
 
     def perceptual_forward(self, false_face_sequences):
+        # print(f'false face sequences shape = {false_face_sequences.shape}')
         false_face_sequences = self.to_2d(false_face_sequences)
         false_face_sequences = self.get_lower_half(false_face_sequences)
 
         false_feats = false_face_sequences
+        # print(f'old false_feats.shape={false_feats.shape}')
         for f in self.face_encoder_blocks:
             false_feats = f(false_feats)
-
+            # print(f'running false_feats.shape={false_feats.shape}')
+        # print(f'new false_feats.shape={false_feats.shape}')
         false_pred_loss = F.binary_cross_entropy(self.binary_pred(false_feats).view(len(false_feats), -1), 
                                         torch.ones((len(false_feats), 1)).cuda())
 
